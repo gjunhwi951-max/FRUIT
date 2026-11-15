@@ -8,8 +8,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
   body { width: 100vw; height: 100vh; overflow: hidden; background: #74b9ff; position: relative; }
 
-  /* 전체 화면 3D 캔버스 */
-  #game-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+  #game-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
 
   /* 도토리 마을 감성 상단 HUD */
   #top-bar {
@@ -33,7 +32,7 @@
   .stat-pill .val { font-size: 16px; color: #27ae60; font-weight: 900; margin-top: 2px; }
   .stat-pill .sub { font-size: 11px; color: #e67e22; font-weight: bold; }
 
-  /* 친구 문자 거래 팝업 (좌측 상단 아래) */
+  /* 친구 문자 거래 팝업 */
   #sms-popup {
     position: absolute; top: 90px; left: 16px; width: 290px;
     background: #fffdf5; border: 3px solid #f1c40f; border-radius: 18px;
@@ -45,13 +44,13 @@
   .sms-actions { display: flex; gap: 6px; }
   .sms-btn { flex: 1; padding: 7px; border: none; border-radius: 10px; font-size: 12px; font-weight: bold; color: white; cursor: pointer; }
 
-  /* 도토리 마을 감성 중앙 건설/업그레이드 패널 (모달) */
+  /* 도토리 마을 감성 건설 패널 */
   #build-modal {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -52%);
     width: 820px; max-width: 94vw; height: 470px; max-height: 72vh;
     background: #fcfaf2; border: 3px solid #dcd3b2; border-radius: 24px;
     box-shadow: 0 12px 30px rgba(0,0,0,0.25); z-index: 20;
-    display: flex; flex-direction: column; padding: 18px 22px;
+    display: none; flex-direction: column; padding: 18px 22px;
   }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .modal-header h2 { font-size: 20px; color: #3d3522; }
@@ -60,7 +59,6 @@
     padding: 6px 14px; font-weight: bold; color: #5c5238; cursor: pointer;
   }
 
-  /* 카테고리 탭 (도토리 마을 스타일) */
   .cat-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
   .cat-btn {
     padding: 7px 16px; border-radius: 20px; border: 2px solid #e2dac3;
@@ -68,7 +66,6 @@
   }
   .cat-btn.active { background: #4cd137; border-color: #44bd32; color: white; }
 
-  /* 카드 그리드 (도토리 마을 건설 카드 디자인) */
   .card-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
     gap: 12px; overflow-y: auto; padding-right: 4px; flex: 1;
@@ -89,7 +86,7 @@
     font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 8px;
   }
 
-  /* 도토리 마을 감성 하단 독(Dock) 메뉴 */
+  /* 하단 독(Dock) 메뉴 */
   #bottom-dock {
     position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
     display: flex; gap: 10px; z-index: 15;
@@ -112,14 +109,13 @@
     pointer-events: none; z-index: 30; font-size: 14px;
   }
 </style>
-<script src="https://unpkg.com"></script>
+<script src="https://cloudflare.com"></script>
 </head>
 <body>
 
 <div id="game-container"></div>
 <div id="toast">알림</div>
 
-<!-- 상단 상태 바 -->
 <div id="top-bar">
   <div class="time-card">
     <div class="time-title" id="stage-subtitle">🌱 씨앗 농장 단계</div>
@@ -134,8 +130,8 @@
     </div>
     <div class="stat-pill">
       <div class="lbl">과일 품종</div>
-      <div class="val" id="fruit-val" style="color:#d35400;">레몬 (x1)</div>
-      <div class="sub" id="mult-val">생산배수 x1</div>
+      <div class="val" id="fruit-val" style="color:#d35400;">🍋 레몬</div>
+      <div class="sub" id="mult-val">총 배수 x1</div>
     </div>
     <div class="stat-pill">
       <div class="lbl">외계인 투자자</div>
@@ -150,7 +146,6 @@
   </div>
 </div>
 
-<!-- 친구 문자 거래 알림 -->
 <div id="sms-popup">
   <div class="sms-title" id="sms-sender">📱 이웃 마을 주문 도착!</div>
   <div class="sms-msg" id="sms-text">신선한 과일 상자를 구매하고 싶어요!</div>
@@ -161,7 +156,6 @@
   </div>
 </div>
 
-<!-- 도토리 마을 스타일 건설/성장 패널 -->
 <div id="build-modal">
   <div class="modal-header">
     <h2>🏭 우리 과일 공장 짓기 & 성장</h2>
@@ -176,7 +170,6 @@
   <div class="card-grid" id="card-grid"></div>
 </div>
 
-<!-- 하단 조작 독(Dock) -->
 <div id="bottom-dock">
   <div class="dock-btn highlight" onclick="manualHarvest()">
     <span class="dock-icon">🍋</span>
@@ -201,7 +194,6 @@
 </div>
 
 <script>
-// 1. 게임 핵심 변수
 let money = 10;
 let investors = 0;
 let fruitStage = 0;
@@ -209,7 +201,6 @@ let halos = 0;
 let dayCount = 1;
 let currentCategory = "farm";
 
-// 10단계 과일 진화 (원작 Sell Lemons 계승)
 const fruits = [
   { name: "레몬", icon: "🍋", mult: 1, reqInv: 0 },
   { name: "오렌지", icon: "🍊", mult: 42, reqInv: 200 },
@@ -221,12 +212,11 @@ const fruits = [
   { name: "퓨리티", icon: "👑", mult: 2.3e11, reqInv: 2e12 }
 ];
 
-// 건설 카드 데이터 (도토리 마을 카드 스타일 + 공장 성장)
 const items = [
-  // 재배·기초
   { id: "stand", cat: "farm", icon: "🏪", name: "레몬 가판대", baseCost: 10, income: 3, score: 10, color: 0xf1c40f, x: -6, z: 5, h: 1.8 },
   { id: "orchard", cat: "farm", icon: "🌳", name: "유기농 과수원", baseCost: 80, income: 18, score: 25, color: 0x2ecc71, x: -2, z: 5, h: 2.2 },
   { id: "dash", cat: "farm", icon: "🛵", name: "과일 배달센터", baseCost: 450, income: 95, score: 50, color: 0xe67e22, x: 2, z: 5, h: 2.4 },
   { id: "depot", cat: "farm", icon: "🏬", name: "대형 저온창고", baseCost: 2500, income: 520, score: 100, color: 0x3498db, x: 6, z: 5, h: 2.8 },
 
-  // 가공·공장
+  { id: "juicer", cat: "factory", icon: "🧃", name: "자동 착즙공장", baseCost: 12000, income: 2600, score: 200, color: 0xe74c3c, x: -6, z: 0, h: 3.2 },
+  { id: "trade", cat: "factory", icon: "📈", name: "글로벌 과일거래소", baseCost: 75000, income: 16500, score: 400, color: 0x9b59b6, x: -2, z: 0, h: 3.8 },
