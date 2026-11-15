@@ -6,27 +6,28 @@
 <title>꾸며봐요! 과일 공장 타이쿤</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
-  body { width: 100vw; height: 100vh; overflow: hidden; background: #74b9ff; position: relative; }
+  body { width: 100vw; height: 100vh; overflow: hidden; background: linear-gradient(180deg, #74b9ff 0%, #0984e3 100%); position: relative; }
 
-  #game-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+  /* 2.5D 쿼터뷰 섬 캔버스 */
+  #world-canvas { width: 100vw; height: 100vh; display: block; }
 
-  /* 도토리 마을 감성 상단 HUD */
+  /* 상단 상태 바 */
   #top-bar {
     position: absolute; top: 14px; left: 16px; right: 16px;
     display: flex; justify-content: space-between; align-items: flex-start;
     z-index: 10; pointer-events: none;
   }
   .time-card {
-    background: rgba(255, 253, 240, 0.95); border: 2px solid #dcd3b2; border-radius: 16px;
-    padding: 10px 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); pointer-events: auto;
+    background: rgba(255, 253, 240, 0.96); border: 2px solid #dcd3b2; border-radius: 16px;
+    padding: 10px 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.12); pointer-events: auto;
   }
   .time-title { font-size: 13px; color: #7f8c8d; font-weight: bold; }
   .time-main { font-size: 16px; color: #2c3e50; font-weight: 900; margin-top: 2px; }
 
   .stats-group { display: flex; gap: 8px; pointer-events: auto; flex-wrap: wrap; justify-content: flex-end; }
   .stat-pill {
-    background: rgba(255, 253, 240, 0.95); border: 2px solid #dcd3b2; border-radius: 16px;
-    padding: 8px 14px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-width: 105px;
+    background: rgba(255, 253, 240, 0.96); border: 2px solid #dcd3b2; border-radius: 16px;
+    padding: 8px 14px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.12); min-width: 105px;
   }
   .stat-pill .lbl { font-size: 11px; color: #7f8c8d; font-weight: bold; }
   .stat-pill .val { font-size: 16px; color: #27ae60; font-weight: 900; margin-top: 2px; }
@@ -34,23 +35,22 @@
 
   /* 친구 문자 거래 팝업 */
   #sms-popup {
-    position: absolute; top: 90px; left: 16px; width: 290px;
+    position: absolute; top: 92px; left: 16px; width: 290px;
     background: #fffdf5; border: 3px solid #f1c40f; border-radius: 18px;
-    padding: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.18); z-index: 15;
-    display: none;
+    padding: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); z-index: 15; display: none;
   }
   .sms-title { font-size: 13px; font-weight: bold; color: #d35400; margin-bottom: 6px; }
   .sms-msg { font-size: 13px; color: #333; background: #fef9e7; padding: 10px; border-radius: 12px; margin-bottom: 10px; line-height: 1.4; }
   .sms-actions { display: flex; gap: 6px; }
   .sms-btn { flex: 1; padding: 7px; border: none; border-radius: 10px; font-size: 12px; font-weight: bold; color: white; cursor: pointer; }
 
-  /* 도토리 마을 감성 건설 패널 */
+  /* 건설/성장 카드 창 */
   #build-modal {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -52%);
-    width: 820px; max-width: 94vw; height: 470px; max-height: 72vh;
+    width: 820px; max-width: 94vw; height: 460px; max-height: 70vh;
     background: #fcfaf2; border: 3px solid #dcd3b2; border-radius: 24px;
     box-shadow: 0 12px 30px rgba(0,0,0,0.25); z-index: 20;
-    display: none; flex-direction: column; padding: 18px 22px;
+    display: flex; flex-direction: column; padding: 18px 22px;
   }
   .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .modal-header h2 { font-size: 20px; color: #3d3522; }
@@ -86,7 +86,7 @@
     font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 8px;
   }
 
-  /* 하단 독(Dock) 메뉴 */
+  /* 하단 독 메뉴 */
   #bottom-dock {
     position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
     display: flex; gap: 10px; z-index: 15;
@@ -94,8 +94,7 @@
   .dock-btn {
     background: #fffdf5; border: 2px solid #dcd3b2; border-radius: 18px;
     padding: 10px 18px; display: flex; flex-direction: column; align-items: center;
-    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 78px;
-    transition: transform 0.1s;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.18); min-width: 78px;
   }
   .dock-btn:active { transform: scale(0.95); }
   .dock-btn.highlight { background: #ffeaa7; border-color: #fdcb6e; }
@@ -103,17 +102,16 @@
   .dock-label { font-size: 12px; font-weight: bold; color: #3d3522; }
 
   #toast {
-    position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 82px; left: 50%; transform: translateX(-50%);
     background: #2f3640; color: #ffeb3b; font-weight: bold;
     padding: 10px 22px; border-radius: 20px; opacity: 0; transition: opacity 0.3s;
     pointer-events: none; z-index: 30; font-size: 14px;
   }
 </style>
-<script src="https://cloudflare.com"></script>
 </head>
 <body>
 
-<div id="game-container"></div>
+<canvas id="world-canvas"></canvas>
 <div id="toast">알림</div>
 
 <div id="top-bar">
@@ -121,7 +119,6 @@
     <div class="time-title" id="stage-subtitle">🌱 씨앗 농장 단계</div>
     <div class="time-main" id="date-display">1년 차 · 봄 · 1일</div>
   </div>
-
   <div class="stats-group">
     <div class="stat-pill">
       <div class="lbl">공장 기금</div>
@@ -187,36 +184,38 @@
     <span class="dock-icon">🚀</span>
     <span class="dock-label">환생·진화</span>
   </div>
-  <div class="dock-btn" onclick="rotateCamera()">
+  <div class="dock-btn" onclick="rotateIsland()">
     <span class="dock-icon">↻</span>
     <span class="dock-label">시점 돌리기</span>
   </div>
 </div>
 
 <script>
-let money = 10;
-let investors = 0;
-let fruitStage = 0;
-let halos = 0;
-let dayCount = 1;
-let currentCategory = "farm";
+var money = 10;
+var investors = 0;
+var fruitStage = 0;
+var halos = 0;
+var dayCount = 1;
+var currentCategory = "farm";
+var rotIndex = 0;
 
-const fruits = [
+var fruits = [
   { name: "레몬", icon: "🍋", mult: 1, reqInv: 0 },
   { name: "오렌지", icon: "🍊", mult: 42, reqInv: 200 },
   { name: "라임", icon: "🍈", mult: 1764, reqInv: 10000 },
   { name: "자몽", icon: "🍎", mult: 74088, reqInv: 500000 },
   { name: "황금귤", icon: "🍑", mult: 3111696, reqInv: 25000000 },
-  { name: "심연라임", icon: "🍏", mult: 1.3e8, reqInv: 1e9 },
-  { name: "공허레몬", icon: "🔮", mult: 5.5e9, reqInv: 5e10 },
-  { name: "퓨리티", icon: "👑", mult: 2.3e11, reqInv: 2e12 }
+  { name: "심연라임", icon: "🍏", mult: 130000000, reqInv: 1000000000 },
+  { name: "공허레몬", icon: "🔮", mult: 5500000000, reqInv: 50000000000 },
+  { name: "퓨리티", icon: "👑", mult: 230000000000, reqInv: 2000000000000 }
 ];
 
-const items = [
-  { id: "stand", cat: "farm", icon: "🏪", name: "레몬 가판대", baseCost: 10, income: 3, score: 10, color: 0xf1c40f, x: -6, z: 5, h: 1.8 },
-  { id: "orchard", cat: "farm", icon: "🌳", name: "유기농 과수원", baseCost: 80, income: 18, score: 25, color: 0x2ecc71, x: -2, z: 5, h: 2.2 },
-  { id: "dash", cat: "farm", icon: "🛵", name: "과일 배달센터", baseCost: 450, income: 95, score: 50, color: 0xe67e22, x: 2, z: 5, h: 2.4 },
-  { id: "depot", cat: "farm", icon: "🏬", name: "대형 저온창고", baseCost: 2500, income: 520, score: 100, color: 0x3498db, x: 6, z: 5, h: 2.8 },
+var items = [
+  { id: "stand", cat: "farm", icon: "🏪", name: "레몬 가판대", baseCost: 10, income: 3, score: 10, gx: -2, gy: 2, color: "#f1c40f" },
+  { id: "orchard", cat: "farm", icon: "🌳", name: "유기농 과수원", baseCost: 80, income: 18, score: 25, gx: -1, gy: 2, color: "#2ecc71" },
+  { id: "dash", cat: "farm", icon: "🛵", name: "과일 배달센터", baseCost: 450, income: 95, score: 50, gx: 1, gy: 2, color: "#e67e22" },
+  { id: "depot", cat: "farm", icon: "🏬", name: "대형 저온창고", baseCost: 2500, income: 520, score: 100, gx: 2, gy: 2, color: "#3498db" },
 
-  { id: "juicer", cat: "factory", icon: "🧃", name: "자동 착즙공장", baseCost: 12000, income: 2600, score: 200, color: 0xe74c3c, x: -6, z: 0, h: 3.2 },
-  { id: "trade", cat: "factory", icon: "📈", name: "글로벌 과일거래소", baseCost: 75000, income: 16500, score: 400, color: 0x9b59b6, x: -2, z: 0, h: 3.8 },
+  { id: "juicer", cat: "factory", icon: "🧃", name: "자동 착즙공장", baseCost: 12000, income: 2600, score: 200, gx: -2, gy: 0, color: "#e74c3c" },
+  { id: "trade", cat: "factory", icon: "📈", name: "글로벌 과일거래소", baseCost: 75000, income: 16500, score: 400, gx: -1, gy: 0, color: "#9b59b6" },
+  { id: "labs", cat: "factory", icon: "🧪", name: "품종개량 연구소", baseCost: 450000, income: 110000, score: 800, gx: 1, gy: 0, color: "#1abc9c" },
