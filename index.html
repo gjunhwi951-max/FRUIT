@@ -2,182 +2,235 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>꾸며봐요! 과일 공장 타이쿤</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>꾸며봐요! 과일 공장 마을</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; user-select: none; }
-  body { width: 100vw; height: 100vh; overflow: hidden; background: #74b9ff; }
-  canvas { width: 100vw; height: 100vh; display: block; }
-  #top { position: fixed; top: 15px; left: 15px; right: 15px; display: flex; justify-content: space-between; z-index: 10; pointer-events: none; }
-  .box { background: #fffdf5; border: 2px solid #dcd3b2; border-radius: 15px; padding: 10px 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); pointer-events: auto; }
-  .stats { display: flex; gap: 8px; }
-  .lbl { font-size: 11px; color: #7f8c8d; font-weight: bold; }
-  .val { font-size: 16px; color: #27ae60; font-weight: 900; }
-  #modal {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -52%);
-    width: 780px; max-width: 92vw; height: 430px; background: #fcfaf2;
-    border: 3px solid #dcd3b2; border-radius: 22px; padding: 18px; z-index: 20;
-    display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  body { width: 100vw; height: 100vh; overflow: hidden; background: linear-gradient(180deg, #74b9ff 0%, #48dbfb 100%); }
+  canvas { width: 100vw; height: 100vh; display: block; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+
+  /* 상단 좌측 시간/계절 바 (도토리 마을 스타일) */
+  #time-panel {
+    position: fixed; top: 14px; left: 14px; display: flex; align-items: center; gap: 10px;
+    background: rgba(255, 253, 240, 0.96); border: 2px solid #dcd3b2; border-radius: 18px;
+    padding: 8px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10;
   }
-  .tabs { display: flex; gap: 8px; margin: 10px 0; }
-  .tab { padding: 7px 15px; border-radius: 18px; border: 2px solid #e2dac3; background: #f4efe1; font-weight: bold; cursor: pointer; }
-  .tab.on { background: #4cd137; color: #fff; border-color: #44bd32; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; overflow-y: auto; flex: 1; }
-  .card { background: #fff; border: 2px solid #ebe4d0; border-radius: 15px; padding: 12px; text-align: center; cursor: pointer; }
-  .card:hover { border-color: #4cd137; transform: translateY(-2px); }
-  .card.off { opacity: 0.5; cursor: not-allowed; }
-  #dock { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 15; }
-  .dbtn { background: #fffdf5; border: 2px solid #dcd3b2; border-radius: 16px; padding: 10px 18px; font-weight: bold; cursor: pointer; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .pause-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 2px solid #dcd3b2;
+    background: #f4efe1; font-weight: bold; cursor: pointer; color: #5c5238;
+  }
+  .time-main { font-size: 16px; font-weight: 900; color: #2c3e50; }
+  .time-sub { font-size: 11px; color: #7f8c8d; font-weight: bold; }
+
+  /* 상단 우측 5대 스탯 바 (도토리 마을 완벽 재현) */
+  #stats-panel {
+    position: fixed; top: 14px; right: 14px; display: flex; gap: 6px; z-index: 10; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .stat-card {
+    background: rgba(255, 253, 240, 0.96); border: 2px solid #dcd3b2; border-radius: 16px;
+    padding: 7px 13px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); min-width: 92px;
+  }
+  .stat-card.money-card { min-width: 155px; background: #fffdf0; border-color: #f1c40f; }
+  .s-lbl { font-size: 11px; color: #7f8c8d; font-weight: bold; }
+  .s-val { font-size: 16px; font-weight: 900; color: #2c3e50; margin-top: 1px; }
+  .s-sub { font-size: 11px; color: #27ae60; font-weight: bold; }
+
+  /* 중앙 건설 창 (도토리 마을 카드 그리드) */
+  #build-modal {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -52%);
+    width: 880px; max-width: 95vw; height: 480px; max-height: 74vh;
+    background: #fcfaf2; border: 3px solid #dcd3b2; border-radius: 24px;
+    padding: 18px 22px; z-index: 20; display: none; flex-direction: column;
+    box-shadow: 0 14px 35px rgba(0,0,0,0.22);
+  }
+  .m-header { display: flex; justify-content: space-between; align-items: center; }
+  .m-header h2 { font-size: 20px; color: #3d3522; }
+  .m-tip { font-size: 12px; color: #7f8c8d; margin: 4px 0 10px 0; font-weight: bold; }
+  .close-btn {
+    background: #efe9d5; border: 2px solid #d5ccb0; border-radius: 12px;
+    padding: 6px 14px; font-weight: bold; color: #5c5238; cursor: pointer;
+  }
+
+  /* 10개 카테고리 탭 */
+  .cat-bar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .cat-btn {
+    padding: 6px 14px; border-radius: 18px; border: 2px solid #e2dac3;
+    background: #f4efe1; color: #5c5238; font-weight: bold; font-size: 12px; cursor: pointer;
+  }
+  .cat-btn.active { background: #4cd137; border-color: #44bd32; color: white; }
+
+  /* 건물 카드 디자인 (영상 속 보너스 문구 스타일 재현) */
+  .card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px; overflow-y: auto; padding-right: 4px; flex: 1;
+  }
+  .b-card {
+    background: white; border: 2px solid #ebe4d0; border-radius: 16px;
+    padding: 12px 10px; text-align: center; cursor: pointer; transition: transform 0.1s, border-color 0.1s;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .b-card:hover { transform: translateY(-2px); border-color: #4cd137; }
+  .b-card.disabled { opacity: 0.55; cursor: not-allowed; }
+  .b-icon { font-size: 34px; margin-bottom: 4px; }
+  .b-name { font-size: 14px; font-weight: 900; color: #2f3640; }
+  .b-cost { font-size: 13px; font-weight: bold; color: #d35400; margin: 2px 0 6px 0; }
+  .b-stats { font-size: 11px; color: #27ae60; font-weight: bold; line-height: 1.45; background: #f9fbf7; padding: 6px; border-radius: 10px; }
+  .b-bonus { font-size: 10px; color: #7f8c8d; margin-top: 3px; font-weight: bold; }
+
+  /* 하단 좌측 이동 버튼 */
+  #move-pad {
+    position: fixed; bottom: 16px; left: 16px; display: flex; gap: 6px; z-index: 15;
+  }
+  .pad-btn {
+    width: 44px; height: 44px; border-radius: 50%; background: rgba(255,253,240,0.95);
+    border: 2px solid #dcd3b2; font-weight: bold; font-size: 16px; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  }
+
+  /* 하단 중앙 독(Dock) 메뉴 */
+  #bottom-dock {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 15;
+  }
+  .dock-btn {
+    background: #fffdf5; border: 2px solid #dcd3b2; border-radius: 18px;
+    padding: 9px 16px; display: flex; flex-direction: column; align-items: center;
+    cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 74px;
+  }
+  .dock-btn:active { transform: scale(0.95); }
+  .dock-btn.del-on { background: #ff7675; border-color: #d63031; color: white; }
+  .dock-icon { font-size: 19px; margin-bottom: 2px; }
+  .dock-txt { font-size: 12px; font-weight: bold; }
+
+  /* 하단 우측 확대/축소/돌리기 */
+  #cam-tools {
+    position: fixed; bottom: 16px; right: 16px; display: flex; gap: 6px; z-index: 15;
+  }
+  .cam-btn {
+    padding: 10px 14px; border-radius: 16px; background: #fffdf5; border: 2px solid #dcd3b2;
+    font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  }
+
+  #toast {
+    position: fixed; top: 85px; left: 50%; transform: translateX(-50%);
+    background: #2f3640; color: #ffeb3b; font-weight: bold; padding: 8px 20px;
+    border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 30; font-size: 13px;
+  }
 </style>
 </head>
 <body>
+
 <canvas id="c"></canvas>
-<div id="top">
-  <div class="box"><div class="lbl">🌱 과일 공장 마을</div><div class="val" id="day" style="color:#2c3e50;">1년 차 · 봄 · 1일</div></div>
-  <div class="stats">
-    <div class="box"><div class="lbl">공장 기금</div><div class="val" id="money">$10</div></div>
-    <div class="box"><div class="lbl">초당 수입</div><div class="val" id="inc" style="color:#e67e22;">+$0</div></div>
-    <div class="box"><div class="lbl">과일 등급</div><div class="val" id="fruit" style="color:#d35400;">🍋 레몬 (x1)</div></div>
-    <div class="box"><div class="lbl">외계인 투자자</div><div class="val" id="inv" style="color:#8e44ad;">0명</div></div>
+<div id="toast">알림</div>
+
+<!-- 상단 좌측 시간 패널 -->
+<div id="time-panel">
+  <button class="pause-btn" id="pause-btn" onclick="togglePause()">||</button>
+  <div>
+    <div class="time-main" id="date-txt">1년 차 · 봄 · 3월 1일</div>
+    <div class="time-sub" id="season-txt">🌱 씨앗 농장 · 드래그로 건물 이동 가능</div>
   </div>
 </div>
 
-<div id="modal">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <h2>🏭 우리 과일 공장 짓기 & 성장</h2>
-    <button onclick="document.getElementById('modal').style.display='none'" style="padding:6px 12px; border-radius:10px; border:1px solid #ccc; cursor:pointer;">닫기 ✕</button>
+<!-- 상단 우측 5대 스탯 바 (도토리 마을 동일 구조) -->
+<div id="stats-panel">
+  <div class="stat-card money-card">
+    <div class="s-lbl">공장 기금</div>
+    <div class="s-val" id="money-val" style="color:#27ae60;">150</div>
+    <div class="s-sub" id="min-inc-val">1분 +0</div>
   </div>
-  <div class="tabs">
-    <button class="tab on" onclick="setCat('farm', this)">🌱 재배·기초</button>
-    <button class="tab" onclick="setCat('factory', this)">🏭 가공·공장</button>
-    <button class="tab" onclick="setCat('rebirth', this)">👽 환생·진화</button>
+  <div class="stat-card">
+    <div class="s-lbl">인구</div>
+    <div class="s-val" id="pop-val">0명</div>
+    <div class="s-sub" id="fruit-badge">🍋 레몬</div>
   </div>
-  <div class="grid" id="grid"></div>
+  <div class="stat-card">
+    <div class="s-lbl">성장점수</div>
+    <div class="s-val" id="score-val">0점</div>
+    <div class="s-sub" id="inv-badge">투자자 0</div>
+  </div>
+  <div class="stat-card">
+    <div class="s-lbl">친환경</div>
+    <div class="s-val" id="eco-val" style="color:#16a085;">0점</div>
+    <div class="s-sub">보너스 반영</div>
+  </div>
+  <div class="stat-card">
+    <div class="s-lbl">행복지수</div>
+    <div class="s-val" id="happy-val" style="color:#e67e22;">50점</div>
+    <div class="s-sub" id="bonus-pct">수익 +0%</div>
+  </div>
 </div>
 
-<div id="dock">
-  <div class="dbtn" style="background:#ffeaa7;" onclick="harvest()">🍋 직접 수확 (+$2)</div>
-  <div class="dbtn" onclick="openModal('farm')">🏗️ 공장 짓기</div>
-  <div class="dbtn" onclick="openModal('rebirth')">🚀 환생·진화</div>
-  <div class="dbtn" onclick="rot=(rot+1)%4">↻ 섬 돌리기</div>
+<!-- 우리 과일 공장 짓기 모달 -->
+<div id="build-modal">
+  <div class="m-header">
+    <h2>우리 과일 공장 짓기</h2>
+    <button class="close-btn" onclick="closeModal()">닫기</button>
+  </div>
+  <div class="m-tip">주변 3칸에 같은 시설이 있으면 추가 효과가 붙고, 인구·친환경·행복지수가 높을수록 공장 수입 보너스가 커집니다!</div>
+  <div class="cat-bar">
+    <button class="cat-btn active" onclick="setCat('house', this)">주거</button>
+    <button class="cat-btn" onclick="setCat('farm', this)">과수원</button>
+    <button class="cat-btn" onclick="setCat('factory', this)">과일공장</button>
+    <button class="cat-btn" onclick="setCat('infra', this)">기반</button>
+    <button class="cat-btn" onclick="setCat('leisure', this)">여가</button>
+    <button class="cat-btn" onclick="setCat('nature', this)">조경</button>
+    <button class="cat-btn" onclick="setCat('landmark', this)">명소</button>
+    <button class="cat-btn" onclick="setCat('evolve', this)">과일진화·환생</button>
+  </div>
+  <div class="card-grid" id="card-grid"></div>
+</div>
+
+<!-- 하단 좌측 화면 이동 버튼 -->
+<div id="move-pad">
+  <button class="pad-btn" onclick="pan(40,0)">◀</button>
+  <button class="pad-btn" onclick="pan(0,40)">▲</button>
+  <button class="pad-btn" onclick="pan(0,-40)">▼</button>
+  <button class="pad-btn" onclick="pan(-40,0)">▶</button>
+</div>
+
+<!-- 하단 중앙 조작 메뉴 -->
+<div id="bottom-dock">
+  <div class="dock-btn" style="background:#ffeaa7;" onclick="manualHarvest()">
+    <span class="dock-icon">🍋</span>
+    <span class="dock-txt" id="harvest-lbl">수확 +5</span>
+  </div>
+  <div class="dock-btn" onclick="openModal('factory')">
+    <span class="dock-icon">🏭</span>
+    <span class="dock-txt">공장 짓기</span>
+  </div>
+  <div class="dock-btn" id="del-btn" onclick="toggleDel()">
+    <span class="dock-icon">🔨</span>
+    <span class="dock-txt">철거</span>
+  </div>
+  <div class="dock-btn" onclick="openModal('evolve')">
+    <span class="dock-icon">🚀</span>
+    <span class="dock-txt">진화·환생</span>
+  </div>
+</div>
+
+<!-- 하단 우측 카메라 도구 -->
+<div id="cam-tools">
+  <button class="cam-btn" onclick="zoomBy(0.15)">+</button>
+  <button class="cam-btn" onclick="zoomBy(-0.15)">-</button>
+  <button class="cam-btn" onclick="rot=(rot+1)%4">↻ 돌리기</button>
 </div>
 
 <script>
-let money = 10, inv = 0, fStage = 0, day = 1, cat = 'farm', rot = 0;
+let money = 150, inv = 0, fStage = 0, dayCount = 1, paused = false;
+let cat = 'factory', rot = 0, zoom = 1.0, offsetX = 0, offsetY = 0, delMode = false;
+
 const fruits = [
   { name: '레몬', icon: '🍋', mult: 1, req: 0 },
-  { name: '오렌지', icon: '🍊', mult: 42, req: 100 },
-  { name: '라임', icon: '🍈', mult: 1764, req: 5000 },
-  { name: '자몽', icon: '🍎', mult: 74088, req: 250000 },
-  { name: '황금귤', icon: '🍑', mult: 3111696, req: 10000000 }
+  { name: '오렌지', icon: '🍊', mult: 10, req: 50 },
+  { name: '라임', icon: '🍈', mult: 100, req: 500 },
+  { name: '자몽', icon: '🍎', mult: 1000, req: 5000 },
+  { name: '황금귤', icon: '🍑', mult: 10000, req: 50000 }
 ];
-const list = [
-  { id: 's1', cat: 'farm', icon: '🏪', name: '레몬 가판대', cost: 10, inc: 3, gx: -2, gy: 1, col: '#f1c40f' },
-  { id: 's2', cat: 'farm', icon: '🌳', name: '유기농 과수원', cost: 80, inc: 20, gx: 0, gy: 1, col: '#2ecc71' },
-  { id: 's3', cat: 'farm', icon: '🛵', name: '과일 배달센터', cost: 450, inc: 110, gx: 2, gy: 1, col: '#e67e22' },
-  { id: 'f1', cat: 'factory', icon: '🧃', name: '자동 착즙공장', cost: 2500, inc: 650, gx: -2, gy: -1, col: '#e74c3c' },
-  { id: 'f2', cat: 'factory', icon: '🤖', name: 'AI 스마트팜', cost: 15000, inc: 4200, gx: 0, gy: -1, col: '#3498db' },
-  { id: 'f3', cat: 'factory', icon: '🚀', name: '우주 과일기지', cost: 100000, inc: 32000, gx: 2, gy: -1, col: '#9b59b6' }
-];
-let cnt = { s1:0, s2:0, s3:0, f1:0, f2:0, f3:0 };
 
-function fmt(n) {
-  if (n < 1000) return Math.floor(n).toLocaleString();
-  const u = ['', 'K', 'M', 'B', 'T', 'Qd'];
-  const t = Math.floor(Math.log10(n)/3);
-  return (n / Math.pow(10, t*3)).toFixed(2) + (u[t] || 'E');
-}
-function mult() { return (1 + inv * 0.05) * fruits[fStage].mult; }
-function getInc() { return list.reduce((a, b) => a + cnt[b.id] * b.inc, 0) * mult(); }
-
-function harvest() { money += 2 * mult(); ui(); }
-function buy(id) {
-  const it = list.find(x => x.id === id);
-  const c = Math.floor(it.cost * Math.pow(1.25, cnt[id]));
-  if (money >= c) { money -= c; cnt[id]++; drawCards(); ui(); }
-}
-function rebirth() {
-  if (money < 5000) return;
-  inv += Math.max(1, Math.floor(Math.sqrt(money / 50)));
-  money = 10; Object.keys(cnt).forEach(k => cnt[k] = 0);
-  drawCards(); ui();
-}
-function evolve() {
-  if (fStage >= fruits.length - 1) return;
-  const nx = fruits[fStage + 1];
-  if (inv < nx.req) return;
-  inv = 0; fStage++; money = 10; Object.keys(cnt).forEach(k => cnt[k] = 0);
-  drawCards(); ui();
-}
-
-function setCat(c, btn) {
-  cat = c;
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
-  drawCards();
-}
-function openModal(c) {
-  document.getElementById('modal').style.display = 'flex';
-  cat = c; drawCards();
-}
-function drawCards() {
-  const g = document.getElementById('grid'); g.innerHTML = '';
-  if (cat === 'rebirth') {
-    const canR = money >= 5000;
-    g.innerHTML += `<div class="card ${canR?'':'off'}" onclick="rebirth()"><div style="font-size:32px">👽</div><b>외계인 환생</b><div style="color:#e67e22;font-weight:bold">${canR?'지금 가능!':'필요: $5,000'}</div><small>투자자 1명당 +5% 영구 보너스</small></div>`;
-    if (fStage < fruits.length - 1) {
-      const nx = fruits[fStage + 1]; const canE = inv >= nx.req;
-      g.innerHTML += `<div class="card ${canE?'':'off'}" onclick="evolve()"><div style="font-size:32px">${nx.icon}</div><b>${nx.name} 진화</b><div style="color:#e67e22;font-weight:bold">투자자 ${fmt(nx.req)}명</div><small>모든 생산속도 x42배 폭증!</small></div>`;
-    }
-    return;
-  }
-  list.filter(x => x.cat === cat).forEach(it => {
-    const c = Math.floor(it.cost * Math.pow(1.25, cnt[it.id]));
-    g.innerHTML += `<div class="card ${money>=c?'':'off'}" onclick="buy('${it.id}')">
-      <div style="font-size:32px">${it.icon}</div>
-      <b>${it.name} (Lv.${cnt[it.id]})</b>
-      <div style="color:#e67e22;font-weight:bold">$${fmt(c)}</div>
-      <small style="color:#27ae60">초당 +$${fmt(it.inc * mult())}</small>
-    </div>`;
-  });
-}
-function ui() {
-  document.getElementById('money').innerText = '$' + fmt(money);
-  document.getElementById('inc').innerText = '+$' + fmt(getInc()) + '/초';
-  const f = fruits[fStage];
-  document.getElementById('fruit').innerText = `${f.icon} ${f.name} (x${fmt(f.mult)})`;
-  document.getElementById('inv').innerText = fmt(inv) + '명';
-}
-
-// 2.5D 섬 그리기
-const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-function iso(gx, gy) {
-  let rx = gx, ry = gy;
-  if (rot===1){rx=-gy;ry=gx;} else if(rot===2){rx=-gx;ry=-gy;} else if(rot===3){rx=gy;ry=-gx;}
-  return { x: cv.width/2 + (rx - ry)*75, y: cv.height/2 + 30 + (rx + ry)*40 };
-}
-function block(gx, gy, w, h, c1, c2, c3) {
-  const p = iso(gx, gy), tw = 60*w, th = 32*w;
-  ctx.fillStyle = c2; ctx.beginPath(); ctx.moveTo(p.x-tw,p.y); ctx.lineTo(p.x,p.y+th); ctx.lineTo(p.x,p.y+th-h); ctx.lineTo(p.x-tw,p.y-h); ctx.fill();
-  ctx.fillStyle = c3; ctx.beginPath(); ctx.moveTo(p.x,p.y+th); ctx.lineTo(p.x+tw,p.y); ctx.lineTo(p.x+tw,p.y-h); ctx.lineTo(p.x,p.y+th-h); ctx.fill();
-  ctx.fillStyle = c1; ctx.beginPath(); ctx.moveTo(p.x,p.y-th-h); ctx.lineTo(p.x+tw,p.y-h); ctx.lineTo(p.x,p.y+th-h); ctx.lineTo(p.x-tw,p.y-h); ctx.fill();
-  return { x: p.x, y: p.y - h };
-}
-function loop() {
-  cv.width = window.innerWidth; cv.height = window.innerHeight;
-  block(0, 0, 3.8, 16, '#ffeaa7', '#fdcb6e', '#e1b12c');
-  block(0, 0, 3.4, 20, '#55efc4', '#00b894', '#009432');
-  list.forEach(it => {
-    if (cnt[it.id] > 0) {
-      const top = block(it.gx, it.gy, 0.7, 30 + cnt[it.id]*12, it.col, '#636e72', '#2d3436');
-      ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(it.icon, top.x, top.y - 6);
-    }
-  });
-  requestAnimationFrame(loop);
-}
-
-setInterval(() => { money += getInc() * 0.1; ui(); if(document.getElementById('modal').style.display!=='none') drawCards(); }, 100);
-setInterval(() => { day++; document.getElementById('day').innerText = `1년 차 · 봄 · ${day}일`; }, 3000);
-drawCards(); ui(); loop();
-</script>
-</body>
-</html>
+// 도토리 마을 수치 밸런스를 그대로 옮긴 과일 공장 시설 데이터 (레벨업 없음, 다수 건설)
+const catalog = [
+  // 주거 (인구 증가)
+  { id: 'h1', cat: 'house', icon: '🏠', name: '일꾼 벽돌 주택', cost: 120, minInc: 0, pop: 4, score: 15, eco: 0, happy: 1, h: 32, col: '#fab1a0' },
+  { id: 'h2', cat: 'house', icon: '🏡', name: '2층 사원 숙소', cost: 360, minInc: 0, pop: 10, score: 35, eco: 0, happy: 2, h: 42, col: '#ffeaa7' },
